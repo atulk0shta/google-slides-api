@@ -1,19 +1,26 @@
 import logging
 import time
 from time import sleep
+
 from src.constants.main import Presentation, Properties
 from src.services.google_slides_api_service import GoogleSlidesApiService
 
 logger = logging.getLogger()
 google_service = GoogleSlidesApiService.get_service()
 
-# presentation = GoogleSlidesApiService.get_or_create_presentation(google_service, title="TRGT DIGITAL")
-presentation_id = '1VeNAHWYvoouKi16A5lIw-smoJ4w1vBoIThILdOJAZ50'
+# Define title and subtitle for first slide
+title = "TRGT DIGITAL"
+subtitle = "We drive remarkable results"
+
+presentation = GoogleSlidesApiService.get_or_create_presentation(google_service,
+                                                                 title=title, subtitle=subtitle)
+presentation_id = presentation['presentationId']
 
 # Create Slide
 page_id = Presentation.SLIDE_ID_PREFIX + str(int(time.time()))
 create_slide_response = GoogleSlidesApiService.create_slide(google_service, presentation_id, page_id)
 logger.info(create_slide_response)
+sleep(1)
 
 # Create Title Textbox in Slide
 title_element_id = Presentation.ELEMENT_ID_PREFIX + str(int(time.time()))
@@ -21,6 +28,7 @@ create_title_response = GoogleSlidesApiService.create_textbox_with_text(google_s
                                                                         title_element_id,
                                                                         Properties.TITLE_PROPERTIES, title=True)
 logger.info(create_title_response)
+sleep(1)
 
 # Sample data - bullet points
 bullet_points = ['Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do',

@@ -1,11 +1,13 @@
 # ref: https://developers.google.com/slides/api/reference/rest/v1/presentations/request#LayoutReference
 import logging
 import os
+
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
 from googleapiclient.errors import HttpError
+
 from src.constants.en import LogMessage
 from src.constants.main import ROOT_DIR, Google
 
@@ -42,11 +44,11 @@ class GoogleSlidesApiService:
         return service
 
     @staticmethod
-    def get_or_create_presentation(service, pid=None, title=None):
+    def get_or_create_presentation(service, pid=None, title=None, subtitle=None):
         # Retrieve a list of presentations
         if not pid:
-            if not title:
-                logger.warning(LogMessage.TITLE_REQUIRED)
+            if not (title and subtitle):
+                logger.warning(LogMessage.TITLE_AND_SUBTITLE_REQUIRED)
                 return
 
             logger.debug(LogMessage.SHEET_CREATION_ATTEMPT.format(title))
@@ -54,6 +56,11 @@ class GoogleSlidesApiService:
 
             presentation = service.presentations().create(body=presentation_body).execute()
             logger.info(LogMessage.SHEET_CREATED.format(presentation['presentationId']))
+
+            add_title_and_subtitle_response = GoogleSlidesApiService.add_title_and_subtitle(service, presentation,
+                                                                                            title,
+                                                                                            subtitle)
+            logger.info(add_title_and_subtitle_response)
         else:
             try:
                 presentation = service.presentations().get(
@@ -69,6 +76,47 @@ class GoogleSlidesApiService:
                     raise
 
         return presentation
+
+    @staticmethod
+    def add_title_and_subtitle(service, presentation, title, subtitle):
+        pid = presentation['presentationId']
+        slide_0 = presentation['slides'][0]
+        slide_0_id = slide_0['objectId']
+        title_id = slide_0['pageElements'][0]['objectId']
+        subtitle_id = slide_0['pageElements'][1]['objectId']
+
+        logger.debug(f'Slide 0 ID: {slide_0_id}')
+        logger.debug(f'Title ID: {title_id}')
+        logger.debug(f'Subtitle ID: {subtitle_id}')
+
+        try:
+            requests = [
+                {
+                    "insertText": {
+                        "objectId": title_id,
+                        "text": title,
+                    }
+                },
+                {
+                    "insertText": {
+                        "objectId": subtitle_id,
+                        "text": subtitle,
+                    }
+                }
+            ]
+
+            body = {"requests": requests}
+            response = (
+                service.presentations()
+                .batchUpdate(presentationId=pid, body=body)
+                .execute()
+            )
+
+            return response
+        except HttpError as error:
+            logger.error(f"An error occurred: {error}")
+
+            return error
 
     @staticmethod
     def create_slide(service, pid, page_id):
