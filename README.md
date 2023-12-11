@@ -8,5 +8,5 @@ Instructions:
 4. To add slide with specific layout, add specific method in src/services/google_slides_api_service.py
 
 References:
-[Google Requests](https://developers.google.com/slides/api/reference/rest/v1/presentations/request)
+[Google Requests](https://developers.google.com/slides/api/reference/rest/v1/presentations/request)  
 [Create and manage presentations](https://developers.google.com/slides/api/guides/presentations)
